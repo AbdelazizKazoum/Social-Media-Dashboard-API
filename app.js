@@ -90,6 +90,42 @@ app.get("/post", requireAuth, function (req, res) {
 });
 
 // Insert your user registration code here.
+app.post("/register", async function (req, res) {
+  const { username, email, password } = req.body;
+
+  try {
+    const checkExistingUser = User.findOne({ $or: [{ username }, { email }] });
+
+    if (checkExistingUser)
+      return res.status(400).json({ message: "User already exists!" });
+
+    const newUser = new User({
+      username,
+      email,
+      password,
+    });
+
+    await newUser.save();
+
+    const token = jwt.sign(
+      {
+        userId: newUser._id,
+        username: newUser.username,
+        email: newUser.email,
+      },
+      SECRET,
+      { expiresIn: "1h" }
+    );
+
+    req.session.token = token;
+
+    res.send({
+      message: `the user ${username} hes benn added successfully  `,
+    });
+  } catch (error) {
+    return res.status(500).json({ message: "Internal server error!" });
+  }
+});
 
 // Insert your user login code here.
 
