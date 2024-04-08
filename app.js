@@ -1,42 +1,43 @@
-const express = require('express');
-const jwt = require('jsonwebtoken');
-const session = require('express-session');
-const path = require('path');
-const mongoose = require('mongoose');
+import express from "express";
+import session from "express-session";
+import * as jwt from "jsonwebtoken";
+import dotenv from "dotenv";
+import mongoose from "mongoose";
+import User from "./models/User.js";
+import Post from "./models/Post.js";
 
+dotenv.config();
 const app = express();
-const PORT = process.env.PORT || 3000;
-const SECRET_KEY = 'your_secret_key';
-
-mongoose.set('strictQuery', false);
-
-const uri =  "mongodb://root:<replace password>@localhost:27017";
-mongoose.connect(uri,{'dbName':'SocialDB'});
-
-const User = mongoose.model('User', { username: String, email: String, password: String });
-const Post = mongoose.model('Post', { userId: mongoose.Schema.Types.ObjectId, text: String });
+const PORT = process.env.PORT || 5000;
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(session({ secret: SECRET_KEY, resave: false, saveUninitialized: true, cookie: { secure: false } }));
+app.use(
+  session({
+    secret: process.env.SECRET_KEY,
+    resave: true,
+    saveUninitialized: true,
+    cookie: { secure: false },
+  })
+);
 
+const uri = process.env.MONGO_URI;
 
-// Insert your authenticateJWT Function code here.
+async function connect() {
+  try {
+    await mongoose.connect(uri, { dbName: "SocialDB" });
 
-// Insert your requireAuth Function code here.
+    console.log("Database connected seccussfully");
+  } catch (err) {
+    console.log("Database connection failed : ", err);
+  }
+}
+await connect();
 
-// Insert your routing HTML code here.
+app.get("/", function (req, res) {
+  res.send("hello world");
+});
 
-// Insert your user registration code here.
-
-// Insert your user login code here.
-
-// Insert your post creation code here.
-
-// Insert your post updation code here.
-
-// Insert your post deletion code here.
-
-// Insert your user logout code here.
-
-app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));
+app.listen(PORT, function () {
+  console.log("server listening in port : ", PORT);
+});
