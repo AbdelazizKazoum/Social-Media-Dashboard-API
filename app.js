@@ -11,7 +11,7 @@ import Post from "./models/Post.js";
 
 dotenv.config();
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 4000;
 const SECRET = process.env.SECRET_KEY;
 
 const __filename = fileURLToPath(import.meta.url);
@@ -128,14 +128,86 @@ app.post("/register", async function (req, res) {
 });
 
 // Insert your user login code here.
+app.post("/login", async (req, res) => {
+  const { username, password } = req.body;
+
+  try {
+    const user = await User.findOne({ username, password });
+
+    if (!user) return res.status(401).json({ message: "Invalid credential!" });
+
+    const token = jwt.verify(
+      { userId: user._id, username: user.username, email: user.email },
+      SECRET,
+      { expiresIn: "1h" }
+    );
+
+    req.session.token = token;
+
+    res.send(` user ${user.username} logged in seccussfully `);
+  } catch (error) {
+    res.status(500).json({ message: "Internal error !" });
+  }
+});
 
 // Insert your post creation code here.
+const posts = [];
+app.post("/posts", authenticateJWT, (req, res) => {
+  const { text } = req.body;
+
+  if (!text || typeof text !== "string")
+    return res
+      .status(400)
+      .json({ message: "Please provide valid post content" });
+
+  const newPost = { userId: req.user.userId, text };
+  posts.push(newPost);
+
+  res.status(201).json({ message: "Post created successfully" });
+});
 
 // Insert your post updation code here.
+app.put("/posts/:postId", authenticateJWT, (req, res) => {
+  const postId = parseInt(req.params.id);
+
+  const { text } = req.body;
+
+  const postIndex = posts.findIndex((post = post.id === postId));
+  if (postIndex === -1)
+    return res.status(404).json({ message: "Post not exists!" });
+
+  posts[postIndex].text = text;
+
+  res.status(200).json({
+    message: "Post updated successfully",
+    updatedPost: posts[postIndex],
+  });
+});
 
 // Insert your post deletion code here.
+app.delete("/posts/:postId", authenticateJWT, (req, res) => {
+  const postId = parseInt(req.params.postId);
+
+  const postIndex = posts.findIndex(
+    (post) => post.id === postId && post.userId === req.user.userId
+  );
+
+  if (postIndex === -1)
+    return res.status(404).json({ message: "Post not found" });
+
+  const deletedPost = posts.splice(postIndex, 1)[0];
+
+  res.json({ message: "Post deleted successfully", deletedPost });
+});
 
 // Insert your user logout code here.
+app.get("/logout", (req, res) => {
+  req.session.destroy((err) => {
+    if (err) console.error(err);
+
+    res.redirect("/login");
+  });
+});
 
 app.listen(PORT, function () {
   console.log("server listening in port : ", PORT);
