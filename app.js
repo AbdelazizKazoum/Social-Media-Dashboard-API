@@ -1,6 +1,6 @@
 import express from "express";
 import session from "express-session";
-import * as jwt from "jsonwebtoken";
+import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -86,7 +86,7 @@ app.get("/login", function (req, res) {
 });
 
 app.get("/post", requireAuth, function (req, res) {
-  res.sendFile(__dirname, "public.html");
+  res.sendFile(path.join(__dirname, "public", "post.html"));
 });
 
 // Insert your user registration code here.
@@ -94,8 +94,11 @@ app.post("/register", async function (req, res) {
   const { username, email, password } = req.body;
 
   try {
-    const checkExistingUser = User.findOne({ $or: [{ username }, { email }] });
-
+    const checkExistingUser = await User.findOne({
+      $or: [{ username }, { email }],
+    });
+    // console.log("username :", username);
+    // console.log("check exists :", checkExistingUser);
     if (checkExistingUser)
       return res.status(400).json({ message: "User already exists!" });
 
@@ -119,10 +122,9 @@ app.post("/register", async function (req, res) {
 
     req.session.token = token;
 
-    res.send({
-      message: `the user ${username} hes benn added successfully  `,
-    });
+    res.redirect(`/?username=${newUser.username}`);
   } catch (error) {
+    console.log(error);
     return res.status(500).json({ message: "Internal server error!" });
   }
 });
@@ -144,7 +146,7 @@ app.post("/login", async (req, res) => {
 
     req.session.token = token;
 
-    res.send(` user ${user.username} logged in seccussfully `);
+    res.redirect(`/?username=${newUser.username}`);
   } catch (error) {
     res.status(500).json({ message: "Internal error !" });
   }
